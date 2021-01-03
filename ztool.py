@@ -296,6 +296,29 @@ class Story:
         else:
             h["cksum"]   = None
             h["filelen"] = None
+            if h["release"] == 2 and serial_num == "AS000C":    # Zork1 rel 2
+                h["filelen"] = 0x15dfe;
+            if h["release"] == 5 and h["pc"] == 0x47ad:         # Zork1 rel 5
+                h["filelen"] = 0x14394;
+            if h["release"] == 15 and h["pc"] == 0x4859:        # Zork1 rel 15
+                h["filelen"] = 0x13ff4;
+            if h["release"] == 20 and h["pc"] == 0x49b5:        # Zork1 rel 20
+                h["filelen"] = 75734;
+            if h["release"] == 23 and serial_num == "820428":   # Zork1 rel 23
+                h["filelen"] = 75780;
+            if h["release"] == 25 and serial_num == "820515":   # Zork1 rel 25
+                h["filelen"] = 75808;
+            if h["release"] == 7 and h["pc"] == 0x45ab:         # Zork2 rel 7
+                h["filelen"] = 0x15ffe;
+            if h["release"] == 18 and serial_num == "820515":   # Zork2 rel 18
+                h["filelen"] = 82422;
+            if h["release"] == 18 and serial_num == "820517":   # Zork2 rel 18a
+                h["filelen"] = 82422;
+            if h["release"] == 17 and serial_num == "820427":   # Zork2 rel 17
+                h["filelen"] = 82368;
+            if h["release"] == 15 and serial_num == "820308":   # Zork2 rel 15
+                h["filelen"] = 82424;
+
         
 
     def read_dictionary(self):
