@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import hashlib
 import math
 import os
 import sys
@@ -260,6 +261,8 @@ class Zobj:
 
 class Story:
     zscii = False
+    configuration = None
+
     def fatal(self, s):
         print("{0}: {1}".format(self.filename, s))
         sys.exit(1)
@@ -534,11 +537,19 @@ class Story:
                 print("Checksum:                 {0:04x}".format(h["cksum"]))
 
 
+    def abbr_str(self, a):
+        if not self.configuration:
+            return str(a)
+
+        attr = self.configuration.attributes
+        if a in attr:
+            return attr[a]
+
     def display_objects(self, style="infodump"):
         print("\n    **** Objects ****\n")
         print("  Object count = {0}\n".format(len(self.zobjects)))
         for i, o in enumerate(self.zobjects):
-            print("{:3d}. Attributes: {}".format(o.number, ", ".join(str(x) for x in sorted(list(o.attributes))) if o.attributes else "None"))
+            print("{:3d}. Attributes: {}".format(o.number, ", ".join(self.abbr_str(x) for x in sorted(list(o.attributes))) if o.attributes else "None"))
             print("     Parent object: {:3d}  Sibling object: {:3d}  Child object: {:3d}".format(o.parent, o.sibling, o.child))
             print("     Property address: {:04x}".format(o.property_table))
             print("         Description: \"{}\"".format(o.description))  
@@ -571,6 +582,8 @@ class Story:
             self.fatal(err)
 
         self.contents = fd.read()
+        self.md5 = hashlib.md5(self.contents).hexdigest().upper()
+
         if len(self.contents) < 0x40:
             self.fatal("story file too short to be zmachine file")
 
@@ -586,6 +599,9 @@ class Story:
         self.read_abbreviations()
         self.read_dictionary()
         self.read_objects()
+
+    def pair_configuration(self, conf_obj):
+        self.configuration = conf_obj
         
 class Configuration:
     md5 = None
@@ -620,9 +636,14 @@ class Configuration:
 def main(args):
     if args.conf:
         conf = Configuration(args.conf)
+    else:
+        conf = None
 
     stories = [Story(fn) for fn in args.storyfile]
     for s in stories:
+        if conf and conf.md5 and s.md5 == conf.md5:
+            s.pair_configuration(conf)
+
         if args.style == "infodump":
             print("\nStory file is {0}".format(s.filename))
         if args.info:
