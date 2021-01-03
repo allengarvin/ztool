@@ -1,0 +1,8 @@
+0. Complete parsing of config files
+1. Property tables not working for z4+ games currently
+2. Read grammar (infocom, zilf and inform)
+3. txd output: infodump style
+4. txd output: ZAP style, with objects, dictionary and properties
+5. inform style object dump
+6. zil style object dump
+

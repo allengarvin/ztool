@@ -532,7 +532,14 @@ class Story:
         self.game_map.append([ prop_table, self.high_prop, "Object property table"])
         self.property_table = prop_table
 
+    def read_globals(self):
+        addr = self.header["globals"]
+        gv = self.global_vars = [0] * 240
 
+        for i in range(240):
+            gv[i] = word(self.contents[addr + i * 2:addr + i * 2 + 2])
+        self.game_map.append([addr, addr + 239 * 2 + 1, "Global variables"])
+        
     def display_header(self, style="infodump"):
         h = self.header
 
@@ -597,6 +604,30 @@ class Story:
                 self.display_ob(o, 0)
 
 
+    def display_map(self, style="infodump"):
+        gm = self.game_map
+
+        gm = sorted(gm, key=lambda x: x[0])
+
+        print("\n    **** Story file map ****\n")
+        print(" Base    End   Size")
+        for start, end, desc in gm:
+            print("{:5x} {:6x} {:6x}  {}".format(start, end, end - start + 1, desc))
+#    0     3f     40  Story file header
+#   40    1ef    1b0  Abbreviation data
+#  1f0    2af     c0  Abbreviation pointer table
+#  2b0    bb7    908  Object table
+#  bb8   2270   16b9  Property data
+# 2271   2450    1e0  Global variables
+# 2451   2e52    a02
+# 2e53   2f5e    10c  Grammar pointer table
+# 2f5f   3892    934  Grammar data
+# 3893   39b6    124  Action routine table
+# 39b7   3ada    124  Pre-action routine table
+# 3adb   3b20     46  Preposition table
+# 3b21   4e36   1316  Dictionary
+# 4e37  14b8b   fd55  Paged memory
+
     def __init__(self, storyfile):
         self.filename = storyfile
         try:
@@ -611,7 +642,7 @@ class Story:
             self.fatal("story file too short to be zmachine file")
 
         self.abbreviations = None
-        self.game_map = []
+        self.game_map = [ [ 0, 0x3f, "Story file header" ] ]
         self.addr_to_dict = dict()
         self.hs_addr = None
         self.adjectives = dict()
@@ -620,6 +651,7 @@ class Story:
 
         self.zscii = Zscii(self)
         self.read_abbreviations()
+        self.read_globals()
         self.read_dictionary()
         self.read_objects()
 
@@ -679,6 +711,8 @@ def main(args):
             s.display_objects()
         if args.tree:
             s.display_tree()
+        if args.map:
+            s.display_map()
             
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Z-machine information tool")
@@ -690,5 +724,6 @@ if __name__ == "__main__":
     ap.add_argument("-t", "--tree", action="store_true", help="Show object tree")
     ap.add_argument("-s", "--style", default="infodump", help="Style. Options: infodump, zil, inform")
     ap.add_argument("-c", "--conf", help="Conf file (reform style)")
+    ap.add_argument("-m", "--map", action="store_true", help="Show memory map")
     args = ap.parse_args()
     main(args)
