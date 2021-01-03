@@ -4,6 +4,7 @@ import argparse
 import math
 import os
 import sys
+from parse import parse
 
 PREP =          0x08
 DESC =          0x20    #  infocom V1-5 only -- actually an adjective. 
@@ -178,6 +179,9 @@ def list_columns(obj, cols=4, columnwise=True, gap=4):
     print(printer)
 
 def print_table(arr):
+    if not arr:
+        return
+
     maxlen = len(max(arr, key=len))
     list_columns(arr, cols=(80 // maxlen))
     
@@ -343,6 +347,9 @@ class Story:
 
         z = self.zscii
         addr = self.header["abbr"]
+        if not addr:
+            return
+
         max_a = 32 if v == 2 else 96
         abbr = self.abbreviations = [0] * max_a
 
@@ -401,6 +408,9 @@ class Story:
     def display_abbreviations(self):
         abbr = []
         print("\n    **** Abbreviations ****\n")
+        if not self.abbreviations:
+            return
+
         for i, a in enumerate(self.abbreviations):
             abbr.append('[{0:d}] "{1:s}"'.format(i, a))
         print_table(abbr)
@@ -564,6 +574,7 @@ class Story:
         if len(self.contents) < 0x40:
             self.fatal("story file too short to be zmachine file")
 
+        self.abbreviations = None
         self.game_map = []
         self.addr_to_dict = dict()
         self.hs_addr = None
@@ -575,10 +586,41 @@ class Story:
         self.read_abbreviations()
         self.read_dictionary()
         self.read_objects()
-        print(self.game_map)
         
+class Configuration:
+    md5 = None
+    
+    def __init__(self, fn):
+        self.filename = fn    
+
+        try:
+            fd = open(fn, "r")
+        except OSError as err:
+            print(sys.argv[0] + ": {0}".format(err))
+            sys.exit(1)
+
+        self.attributes = dict()
+        self.properties = dict()
+        self.routines = dict()
+        self.globals = dict()
+
+        for line in fd:
+            line = line.strip()
+            if "!" in line:
+                line = line[:line.index("!")]
+            p = parse("Attribute {attr:d} {aname:w}", line)
+            if p:
+                self.attributes[p["attr"]] = p["aname"]
+            p = parse("MD5 {md5:w}", line)
+            if p:
+                self.md5 = p["md5"]
+        print(self.attributes)
+        fd.close()
 
 def main(args):
+    if args.conf:
+        conf = Configuration(args.conf)
+
     stories = [Story(fn) for fn in args.storyfile]
     for s in stories:
         if args.style == "infodump":
@@ -603,5 +645,6 @@ if __name__ == "__main__":
     ap.add_argument("-o", "--objects", action="store_true", help="Show objects")
     ap.add_argument("-t", "--tree", action="store_true", help="Show object tree")
     ap.add_argument("-s", "--style", default="infodump", help="Style. Options: infodump, zil, inform")
+    ap.add_argument("-c", "--conf", help="Conf file (reform style)")
     args = ap.parse_args()
     main(args)
