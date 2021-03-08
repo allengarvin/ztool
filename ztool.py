@@ -5,7 +5,6 @@ import hashlib
 import math
 import os
 import sys
-from parse import parse
 
 PREP =          0x08
 DESC =          0x20    #  infocom V1-5 only -- actually an adjective. 
@@ -451,6 +450,7 @@ class Story:
 
     def read_property_table(self, addr):
         p = dict()
+        p_addr = dict()
 
         sz_byte = self.contents[addr]
         while sz_byte != 0:
@@ -459,6 +459,7 @@ class Story:
 
             p[propnum] = list()
             addr += 1
+            p_addr[propnum] = addr
             for i in range(sz):
                 p[propnum].append(self.contents[addr+i])
             addr += sz
@@ -466,7 +467,7 @@ class Story:
             sz_byte = self.contents[addr]
 
         self.high_prop = max(addr, self.high_prop)
-        return p
+        return p, p_addr
 
     def build_object(self, bytes, addr):
         v = self.header["version"]
@@ -492,7 +493,7 @@ class Story:
 
         zo.property_table = ptable
         zo.description = self.zscii.read_text(ptable + 1, self.contents[ptable] * 2)
-        zo.properties = self.read_property_table(ptable + self.contents[ptable] * 2 + 1)
+        zo.properties, zo.properties_address = self.read_property_table(ptable + self.contents[ptable] * 2 + 1)
         self.zobjects.append(zo)
 
         return zo.property_table
@@ -586,6 +587,7 @@ class Story:
             print("          Properties:")
             for p in sorted(o.properties.keys(), reverse=True):
                 print("              [{:2d}] {} ".format(p, " ".join("{:02x}".format(x) for x in o.properties[p])))
+                print("                   @{:04x}".format(o.properties_address[p]))
             print()
 
 
